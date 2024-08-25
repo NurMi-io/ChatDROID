@@ -1,140 +1,80 @@
-ChatGOV 미리보기를 HTML, CSS, 및 자바스크립트를 사용하여 Material Design 3 테마로 구현하고 심심이 워크숍 API를 통합하는 방법에 대한 개요를 제공하겠습니다. 이러한 기술 스택을 사용하여 다음과 같은 주요 구성 요소를 개발할 수 있습니다.
+`MainActivity.kt`는 안드로이드 앱에서 가장 중심이 되는 Kotlin 파일로, 사용자 인터페이스와 기능을 초기화하고 관리하는 역할을 합니다. ChatGOV 앱을 위한 `MainActivity.kt` 파일을 구성하는 방법을 아래에 예시 코드와 함께 설명하겠습니다. 이 예시는 Material Design 3 지침을 따르며, 앱 바, 채팅 메시지, 텍스트 입력 기능을 포함하고, 심심이 워크숍 API와의 연동을 고려합니다.
 
-### 1. 앱 바 (App Bar)
+### MainActivity.kt 예시
 
-#### HTML:
-```html
-<header class="app-bar">
-  <img src="profile.jpg" alt="Profile" class="profile-icon">
-  <h1>ChatGOV</h1>
-  <button class="settings-button">⚙️</button>
-</header>
-```
+```kotlin
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.appbar.MaterialToolbar
+import kotlinx.coroutines.*
 
-#### CSS:
-```css
-.app-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: #6200EE; /* 예시 색상 */
-  color: white;
-  border-radius: 8px;
+class MainActivity : AppCompatActivity() {
+    private lateinit var chatAdapter: ChatAdapter
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var inputField: TextInputEditText
+    private lateinit var sendButton: MaterialButton
+    private lateinit var toolbar: MaterialToolbar
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        recyclerView = findViewById(R.id.chat_recycler_view)
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        chatAdapter = ChatAdapter()
+        recyclerView.adapter = chatAdapter
+
+        inputField = findViewById(R.id.input_text)
+        sendButton = findViewById(R.id.send_button)
+
+        sendButton.setOnClickListener {
+            val message = inputField.text.toString()
+            if (message.isNotEmpty()) {
+                sendMessage(message)
+                inputField.text?.clear()
+            }
+        }
+    }
+
+    private fun sendMessage(message: String) {
+        // Display the user's message in the UI
+        chatAdapter.addMessage(ChatMessage(message, MessageType.USER))
+
+        // Simulate a delay for API response
+        GlobalScope.launch(Dispatchers.Main) {
+            delay(1000)
+            val response = callSimSimiApi(message)
+            chatAdapter.addMessage(ChatMessage(response, MessageType.AI))
+            recyclerView.scrollToPosition(chatAdapter.itemCount - 1)
+        }
+    }
+
+    private fun callSimSimiApi(message: String): String {
+        // This function should implement the actual API call to the SimSimi Workshop API
+        // For now, let's return a dummy response
+        return "This is a response to '$message'"
+    }
 }
 
-.profile-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
-
-.settings-button {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-}
-```
-
-### 2. 채팅 메시지
-
-#### HTML:
-```html
-<div class="chat-container">
-  <div class="message received">안녕하세요, 무엇을 도와드릴까요?</div>
-  <div class="message sent">안녕하세요, 심심이 API에 대해 알고 싶어요.</div>
-</div>
-```
-
-#### CSS:
-```css
-.chat-container {
-  display: flex;
-  flex-direction: column;
-}
-
-.message {
-  max-width: 70%;
-  margin: 5px;
-  padding: 10px;
-  border-radius: 20px;
-  color: white;
-}
-
-.sent {
-  align-self: flex-end;
-  background-color: #6200EE;
-}
-
-.received {
-  align-self: flex-start;
-  background-color: #03DAC5;
+data class ChatMessage(val message: String, val type: MessageType)
+enum class MessageType {
+    USER, AI
 }
 ```
 
-### 3. 텍스트 입력 필드
+### 설명
+1. **초기 설정 및 레이아웃 연결**: `setContentView`를 사용하여 XML 레이아웃 파일을 액티비티에 연결합니다.
+2. **앱 바 설정**: `MaterialToolbar`를 사용하여 앱 바를 설정합니다.
+3. **리사이클러 뷰 및 어댑터**: 채팅 메시지를 보여줄 `RecyclerView`와 해당 어댑터를 초기화합니다.
+4. **텍스트 입력 및 전송 버튼**: 사용자 입력을 받는 `TextInputEditText`와 메시지를 보내는 `MaterialButton`을 설정합니다.
+5. **메시지 전송 함수**: 사용자가 메시지를 입력하면 화면에 표시하고, API를 호출하여 AI의 응답을 받아 표시합니다.
 
-#### HTML:
-```html
-<div class="input-container">
-  <input type="text" id="messageInput" placeholder="메시지 입력...">
-  <button onclick="sendMessage()">보내기</button>
-</div>
-```
-
-#### CSS:
-```css
-.input-container {
-  display: flex;
-  padding: 10px;
-}
-
-#messageInput {
-  flex-grow: 1;
-  margin-right: 10px;
-  padding: 10px;
-  border-radius: 20px;
-  border: 1px solid #CCC;
-}
-
-button {
-  padding: 10px 20px;
-  border-radius: 20px;
-  background-color: #6200EE;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-```
-
-### 4. 자바스크립트 및 심심이 워크숍 API 통합
-
-#### JavaScript:
-```javascript
-function sendMessage() {
-  const input = document.getElementById('messageInput');
-  const message = input.value;
-  input.value = ''; // 입력 필드 초기화
-
-  // 메시지를 채팅 컨테이너에 추가
-  const messageContainer = document.querySelector('.chat-container');
-  const newMessage = document.createElement('div');
-  newMessage.classList.add('message', 'sent');
-  newMessage.textContent = message;
-  messageContainer.appendChild(newMessage);
-
-  // 심심이 API 호출
-  fetch('https://api.simsimi.net/v2/?text=' + encodeURIComponent(message) + '&lc=ko')
-    .then(response => response.json())
-    .then(data => {
-      const replyMessage = document.createElement('div');
-      replyMessage.classList.add('message', 'received');
-      replyMessage.textContent = data.message;
-      messageContainer.appendChild(replyMessage);
-    });
-}
-```
-
-위 예제에서는 간단한 채팅 인터페이스를 구현하고, 사용자가 입력한 메시지를 심심이 API로 전송한 후, 받은 답변을 화면에 표시하는 기능을 구현하였습니다. Material Design 3의 디자인 원칙을 따르면서, 사용자 친화적이고 반응형 디자인을 제공합니다.
+이 코드는 기본적인 채팅 인터페이스와 API 연동을 설명하기 위한 것이며, 실제 애플리케이션에서는 API 키 관리, 에러 처리, 네트워크 상태 확인 등 보다 세부적인 기능이 추가될 필요가 있습니다.
